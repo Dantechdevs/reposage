@@ -3,628 +3,724 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>RepoSage — GitHub Repo Explainer</title>
+<title>RepoSage — Understand any GitHub repository</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Fraunces:ital,wght@0,300;0,700;0,900;1,300;1,700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --card: #1a1a26;
-    --border: rgba(255,255,255,0.07);
-    --border-hover: rgba(255,255,255,0.14);
-    --text: #f0efe8;
-    --muted: #8c8a9e;
-    --accent: #7c6af0;
-    --accent2: #4ecdc4;
-    --accent3: #f7b731;
-    --code-bg: #0d0d14;
-    --font-display: 'Syne', sans-serif;
-    --font-serif: 'Instrument Serif', serif;
-    --font-mono: 'DM Mono', monospace;
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --bg:#080c10;
+  --bg2:#0d1117;
+  --surface:#111820;
+  --card:#141c26;
+  --border:#1e2a38;
+  --border2:#263344;
+  --text:#e6edf3;
+  --text2:#8b949e;
+  --text3:#495869;
+  --green:#3fb950;
+  --green2:#238636;
+  --green-dim:#1a3a20;
+  --blue:#58a6ff;
+  --blue-dim:#1a2840;
+  --amber:#e3b341;
+  --amber-dim:#2d2010;
+  --red:#f85149;
+  --purple:#bc8cff;
+  --teal:#39d353;
+  --mono:'IBM Plex Mono',monospace;
+  --display:'Fraunces',serif;
+  --body:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--body);overflow-x:hidden;line-height:1.6;font-size:16px}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* scanline overlay */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:999}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-display);
-    overflow-x: hidden;
-    line-height: 1.6;
-  }
+/* dot grid */
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(59,185,80,0.08) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
 
-  /* ─── Noise overlay ─── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-  }
+.wrap{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
 
-  /* ─── Glow blobs ─── */
-  .glow-blob {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(120px);
-    opacity: 0.18;
-    pointer-events: none;
-    z-index: 0;
-  }
-  .blob1 { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -200px; }
-  .blob2 { width: 500px; height: 500px; background: var(--accent2); bottom: -100px; right: -150px; }
-  .blob3 { width: 400px; height: 400px; background: var(--accent3); top: 50%; left: 50%; transform: translate(-50%,-50%); opacity: 0.08; }
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(8,12,16,0.9);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:0 2rem;
+}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-badge{
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  background:var(--green);color:#080c10;
+  padding:3px 8px;border-radius:3px;letter-spacing:0.05em;
+}
+.logo-name{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.02em}
+.logo-name span{color:var(--green)}
+.nav-links{display:flex;gap:1.5rem;align-items:center}
+.nav-links a{font-family:var(--mono);font-size:12px;color:var(--text2);text-decoration:none;letter-spacing:0.04em;transition:color .2s}
+.nav-links a:hover{color:var(--green)}
+.nav-cta{
+  font-family:var(--mono);font-size:12px;font-weight:600;
+  background:transparent;border:1px solid var(--green2);
+  color:var(--green);padding:6px 16px;border-radius:4px;
+  text-decoration:none;letter-spacing:0.04em;
+  transition:background .2s,color .2s;
+}
+.nav-cta:hover{background:var(--green2)}
 
-  /* ─── Layout ─── */
-  .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 1; }
+/* ── HERO ── */
+.hero{padding:5rem 0 3rem;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;position:relative;z-index:1}
 
-  /* ─── Nav ─── */
-  nav {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1.5rem 2rem;
-    position: sticky; top: 0; z-index: 100;
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(20px);
-    background: rgba(10,10,15,0.8);
-  }
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  color:var(--green);letter-spacing:0.1em;text-transform:uppercase;
+  border:1px solid var(--green2);border-radius:3px;
+  padding:4px 10px;margin-bottom:1.5rem;
+  background:var(--green-dim);
+}
+.hero-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.4s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
-  .logo {
-    display: flex; align-items: center; gap: 0.6rem;
-    font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em;
-    text-decoration: none; color: var(--text);
-  }
-  .logo-icon {
-    width: 32px; height: 32px; border-radius: 8px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-  .logo span { color: var(--accent); }
+h1{
+  font-family:var(--display);
+  font-size:clamp(3rem,5.5vw,4.8rem);
+  font-weight:900;
+  line-height:0.95;
+  letter-spacing:-0.04em;
+  margin-bottom:1.5rem;
+  color:var(--text);
+}
+h1 .ital{font-style:italic;font-weight:300;color:var(--green)}
+h1 .dim{color:var(--text3)}
 
-  .nav-links { display: flex; gap: 2rem; align-items: center; }
-  .nav-links a {
-    color: var(--muted); text-decoration: none; font-size: 0.9rem;
-    font-weight: 500; transition: color 0.2s;
-  }
-  .nav-links a:hover { color: var(--text); }
+.hero-sub{
+  font-size:1rem;color:var(--text2);line-height:1.75;
+  margin-bottom:2rem;max-width:460px;
+}
+.hero-sub code{
+  font-family:var(--mono);font-size:0.85em;
+  background:var(--blue-dim);color:var(--blue);
+  padding:1px 6px;border-radius:3px;
+}
 
-  .btn-primary {
-    background: var(--accent);
-    color: #fff; border: none; border-radius: 8px;
-    padding: 0.55rem 1.2rem; font-size: 0.9rem;
-    font-family: var(--font-display); font-weight: 700;
-    cursor: pointer; text-decoration: none;
-    transition: opacity 0.2s, transform 0.15s;
-    display: inline-block;
-  }
-  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:2.5rem}
+.btn-main{
+  font-family:var(--mono);font-size:13px;font-weight:600;
+  background:var(--green);color:#080c10;
+  border:none;border-radius:5px;padding:10px 22px;
+  cursor:pointer;text-decoration:none;display:inline-block;
+  transition:opacity .2s,transform .15s;letter-spacing:0.02em;
+}
+.btn-main:hover{opacity:.88;transform:translateY(-1px)}
+.btn-sec{
+  font-family:var(--mono);font-size:13px;font-weight:500;
+  background:transparent;border:1px solid var(--border2);
+  color:var(--text2);border-radius:5px;padding:10px 22px;
+  cursor:pointer;text-decoration:none;display:inline-block;
+  transition:border-color .2s,color .2s;letter-spacing:0.02em;
+}
+.btn-sec:hover{border-color:var(--text2);color:var(--text)}
 
-  /* ─── Hero ─── */
-  .hero {
-    padding: 7rem 2rem 5rem;
-    text-align: center;
-    max-width: 860px;
-    margin: 0 auto;
-  }
+.hero-meta{display:flex;gap:1.5rem;flex-wrap:wrap}
+.hero-badge{
+  font-family:var(--mono);font-size:11px;color:var(--text3);
+  display:flex;align-items:center;gap:6px;
+}
+.hero-badge svg{width:13px;height:13px;opacity:.5}
 
-  .badge {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    background: rgba(124,106,240,0.12); border: 1px solid rgba(124,106,240,0.3);
-    border-radius: 100px; padding: 0.3rem 0.9rem;
-    font-size: 0.78rem; font-weight: 500; color: #a89ff5;
-    margin-bottom: 1.8rem; letter-spacing: 0.03em; text-transform: uppercase;
-  }
-  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: block; animation: pulse 2s ease infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+/* ── TERMINAL ── */
+.terminal{
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:8px;
+  overflow:hidden;
+  font-family:var(--mono);
+  font-size:13px;
+  line-height:1.9;
+  box-shadow:0 0 0 1px rgba(59,185,80,0.06),0 24px 48px rgba(0,0,0,0.5);
+}
+.term-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.term-dot{width:11px;height:11px;border-radius:50%}
+.td-r{background:#f85149}.td-y{background:#e3b341}.td-g{background:#3fb950}
+.term-tab{
+  font-size:11px;color:var(--text3);margin-left:auto;
+  background:var(--bg2);border:1px solid var(--border);
+  padding:2px 10px;border-radius:3px;
+}
+.term-body{padding:1.4rem 1.6rem}
+.t-prompt{color:var(--green)}
+.t-cmd{color:var(--text)}
+.t-out{color:var(--text2)}
+.t-key{color:var(--purple)}
+.t-val{color:var(--amber)}
+.t-str{color:var(--teal)}
+.t-dim{color:var(--text3)}
+.t-ok{color:var(--green)}
+.t-info{color:var(--blue)}
+.t-err{color:var(--red)}
+.t-section{color:var(--amber);font-weight:600}
+.t-hr{border:none;border-top:1px solid var(--border);margin:10px 0}
+.cursor{display:inline-block;width:8px;height:14px;background:var(--green);vertical-align:middle;animation:blink 1s step-end infinite}
 
-  h1 {
-    font-size: clamp(3rem, 7vw, 5.2rem);
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    line-height: 1.05;
-    margin-bottom: 1.5rem;
-  }
-  h1 em {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-weight: 400;
-    color: var(--accent);
-  }
+/* ── DEMO INPUT ── */
+.demo-section{
+  padding:2rem 0 3rem;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  background:var(--bg2);
+  position:relative;z-index:1;
+}
+.demo-inner{max-width:720px;margin:0 auto;padding:0 2rem}
+.demo-tag{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:0.08em;margin-bottom:12px}
+.demo-tag span{color:var(--green)}
+.demo-bar{
+  display:flex;background:var(--surface);
+  border:1px solid var(--border2);border-radius:6px;
+  overflow:hidden;transition:border-color .2s;
+}
+.demo-bar:focus-within{border-color:var(--green2)}
+.demo-pre{
+  padding:12px 12px 12px 16px;
+  font-family:var(--mono);font-size:13px;
+  color:var(--text3);white-space:nowrap;
+  border-right:1px solid var(--border);
+}
+.demo-bar input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-family:var(--mono);font-size:13px;
+  padding:12px;caret-color:var(--green);
+}
+.demo-bar input::placeholder{color:var(--text3)}
+.demo-bar button{
+  background:var(--green2);border:none;
+  color:var(--green);font-family:var(--mono);font-size:12px;
+  font-weight:600;padding:12px 18px;cursor:pointer;
+  transition:background .2s;white-space:nowrap;letter-spacing:0.04em;
+}
+.demo-bar button:hover{background:var(--green)}
+.demo-bar button:hover{color:#080c10}
+.demo-hints{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.hint-tag{
+  font-family:var(--mono);font-size:11px;
+  color:var(--text3);background:var(--surface);
+  border:1px solid var(--border);border-radius:3px;
+  padding:3px 8px;cursor:pointer;transition:color .2s,border-color .2s;
+}
+.hint-tag:hover{color:var(--green);border-color:var(--green2)}
 
-  .hero-sub {
-    font-size: 1.15rem;
-    color: var(--muted);
-    max-width: 560px;
-    margin: 0 auto 2.5rem;
-    font-weight: 400;
-    line-height: 1.7;
-  }
+/* ── STATS ── */
+.stats{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-bottom:1px solid var(--border);
+  position:relative;z-index:1;
+}
+.stat{
+  padding:2rem 2rem;
+  border-right:1px solid var(--border);
+}
+.stat:last-child{border-right:none}
+.stat-n{
+  font-family:var(--display);font-size:2.6rem;font-weight:900;
+  letter-spacing:-0.04em;line-height:1;color:var(--text);
+  margin-bottom:6px;
+}
+.stat-n em{color:var(--green);font-style:normal}
+.stat-l{font-size:13px;color:var(--text3);font-family:var(--mono)}
 
-  .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 4rem; }
-  .btn-outline {
-    background: transparent; border: 1px solid var(--border-hover);
-    color: var(--text); border-radius: 8px; padding: 0.55rem 1.2rem;
-    font-size: 0.9rem; font-family: var(--font-display); font-weight: 600;
-    cursor: pointer; text-decoration: none; transition: border-color 0.2s, background 0.2s;
-    display: inline-block;
-  }
-  .btn-outline:hover { border-color: var(--accent); background: rgba(124,106,240,0.08); }
+/* ── SECTION HEADER ── */
+.sec{padding:5rem 0;position:relative;z-index:1}
+.sec-alt{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  color:var(--green);letter-spacing:0.12em;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;
+}
+.eyebrow::before{content:'//';color:var(--text3)}
+h2{
+  font-family:var(--display);font-size:clamp(2rem,3.5vw,2.8rem);
+  font-weight:900;letter-spacing:-0.04em;line-height:1.05;
+  margin-bottom:1rem;color:var(--text);
+}
+h2 em{color:var(--green);font-style:italic;font-weight:300}
+.sec-sub{font-size:15px;color:var(--text2);max-width:520px;line-height:1.75;margin-bottom:3rem}
 
-  /* ─── Demo Input ─── */
-  .demo-bar {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    max-width: 680px;
-    margin: 0 auto 1rem;
-    transition: border-color 0.2s;
-  }
-  .demo-bar:focus-within { border-color: var(--accent); }
+/* ── FEATURES ── */
+.feat-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.feat{
+  padding:1.75rem;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  background:var(--card);transition:background .2s;
+  position:relative;overflow:hidden;
+}
+.feat::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--green),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.feat:hover{background:var(--surface)}
+.feat:hover::before{opacity:1}
+.feat:nth-child(3n){border-right:none}
+.feat:nth-child(n+4){border-bottom:none}
+.feat-num{font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:14px;letter-spacing:0.08em}
+.feat-icon{
+  width:36px;height:36px;border-radius:6px;
+  background:var(--green-dim);border:1px solid var(--green2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;margin-bottom:14px;
+}
+.feat-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;letter-spacing:-0.01em}
+.feat-desc{font-size:13px;color:var(--text2);line-height:1.65}
 
-  .demo-bar-prefix {
-    padding: 0.9rem 1rem 0.9rem 1.2rem;
-    color: var(--muted); font-family: var(--font-mono); font-size: 0.85rem;
-    white-space: nowrap;
-  }
-  .demo-bar input {
-    flex: 1; background: transparent; border: none; outline: none;
-    color: var(--text); font-family: var(--font-mono); font-size: 0.85rem;
-    padding: 0.9rem 0; caret-color: var(--accent);
-  }
-  .demo-bar input::placeholder { color: rgba(140,138,158,0.5); }
-  .demo-bar button {
-    background: var(--accent); border: none; color: #fff;
-    padding: 0.9rem 1.4rem; cursor: pointer;
-    font-family: var(--font-display); font-weight: 700; font-size: 0.85rem;
-    transition: opacity 0.2s; white-space: nowrap;
-  }
-  .demo-bar button:hover { opacity: 0.85; }
+/* ── STACK ── */
+.stack-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start}
+.stack-table{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.stack-head{
+  display:grid;grid-template-columns:1fr 80px 90px;
+  padding:8px 16px;background:var(--surface);
+  font-family:var(--mono);font-size:11px;color:var(--text3);
+  letter-spacing:0.06em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+}
+.stack-row{
+  display:grid;grid-template-columns:1fr 80px 90px;
+  padding:11px 16px;background:var(--card);
+  border-bottom:1px solid var(--border);
+  align-items:center;transition:background .15s;
+}
+.stack-row:last-child{border-bottom:none}
+.stack-row:hover{background:var(--surface)}
+.stack-nm{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:8px}
+.stack-v{font-family:var(--mono);font-size:12px;color:var(--text3)}
+.tag{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;font-weight:600;letter-spacing:0.04em}
+.tag-fe{background:#1a2d20;color:#3fb950;border:1px solid #238636}
+.tag-be{background:#1a2040;color:#58a6ff;border:1px solid #1f4080}
+.tag-data{background:#2d2010;color:#e3b341;border:1px solid #6a4e10}
+.tag-inf{background:#2d1a1a;color:#f85149;border:1px solid #6a2020}
 
-  .demo-hint { font-size: 0.78rem; color: var(--muted); text-align: center; }
-  .demo-hint code { font-family: var(--font-mono); color: #a89ff5; }
+/* ── CODE BLOCK ── */
+.code-block{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(59,185,80,0.04);
+}
+.code-hdr{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.cdot{width:10px;height:10px;border-radius:50%}
+.cd1{background:#f85149}.cd2{background:#e3b341}.cd3{background:#3fb950}
+.code-fn{font-family:var(--mono);font-size:11px;color:var(--text3);margin-left:auto}
+.code-body{padding:1.3rem 1.5rem;font-family:var(--mono);font-size:12.5px;line-height:1.85;overflow-x:auto}
+.code-body pre{color:#8b949e}
+.ckw{color:#ff7b72}.cfn{color:#d2a8ff}.cstr{color:#a5d6ff}
+.ccmt{color:#3d4f63}.cvar{color:#79c0ff}.cnum{color:#f0883e}
+.cop{color:#ffa657}.cdec{color:#7ee787}
 
-  /* ─── Stats ─── */
-  .stats {
-    display: flex; justify-content: center; gap: 3rem;
-    padding: 3rem 2rem;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-  .stat-item { text-align: center; }
-  .stat-num { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.04em; }
-  .stat-num span { color: var(--accent); }
-  .stat-label { font-size: 0.82rem; color: var(--muted); font-weight: 400; margin-top: 0.2rem; }
+/* ── HOW IT WORKS ── */
+.steps-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:3rem}
+.step{
+  padding:1.75rem;border-right:1px solid var(--border);
+  background:var(--card);position:relative;
+}
+.step:last-child{border-right:none}
+.step-num{
+  font-family:var(--mono);font-size:10px;
+  color:var(--green);letter-spacing:0.1em;
+  margin-bottom:14px;
+  display:flex;align-items:center;gap:6px;
+}
+.step-num::before{content:'';display:block;width:20px;height:1px;background:var(--green2)}
+.step-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;letter-spacing:-0.01em}
+.step-desc{font-size:13px;color:var(--text2);line-height:1.65}
+.step-arrow{
+  position:absolute;right:-1px;top:50%;transform:translateY(-50%);
+  width:20px;height:20px;background:var(--border);
+  clip-path:polygon(0 0,100% 50%,0 100%);
+  z-index:2;display:none;
+}
 
-  /* ─── Features ─── */
-  .section { padding: 6rem 2rem; }
-  .section-label {
-    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em;
-    color: var(--accent2); font-weight: 700; margin-bottom: 0.8rem;
-  }
-  .section-title {
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 800; letter-spacing: -0.04em; line-height: 1.1;
-    margin-bottom: 1rem;
-  }
-  .section-title em {
-    font-family: var(--font-serif); font-style: italic;
-    font-weight: 400; color: var(--accent2);
-  }
-  .section-sub { color: var(--muted); max-width: 500px; line-height: 1.7; margin-bottom: 3.5rem; }
+/* ── CONTRIB ── */
+.contrib-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+.contrib-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:1.5rem;
+  transition:border-color .2s;
+}
+.contrib-card:hover{border-color:var(--border2)}
+.contrib-tag{
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:0.08em;text-transform:uppercase;
+  padding:3px 8px;border-radius:3px;
+  margin-bottom:12px;display:inline-block;
+}
+.ctag-good{background:var(--green-dim);color:var(--green);border:1px solid var(--green2)}
+.ctag-help{background:var(--blue-dim);color:var(--blue);border:1px solid #1f4080}
+.ctag-bug{background:#2d1a1a;color:var(--red);border:1px solid #6a2020}
+.ctag-docs{background:var(--amber-dim);color:var(--amber);border:1px solid #6a4e10}
+.contrib-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
+.contrib-desc{font-size:13px;color:var(--text2);line-height:1.6}
 
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
+/* ── CTA ── */
+.cta-wrap{
+  background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;
+  padding:4rem;max-width:960px;margin:0 auto;
+  display:grid;grid-template-columns:1fr auto;
+  gap:3rem;align-items:center;
+  position:relative;overflow:hidden;
+}
+.cta-wrap::before{
+  content:'';position:absolute;
+  top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--green),var(--blue),transparent);
+}
+.cta-title{
+  font-family:var(--display);
+  font-size:clamp(1.8rem,3vw,2.4rem);
+  font-weight:900;letter-spacing:-0.04em;
+  color:var(--text);margin-bottom:10px;line-height:1.1;
+}
+.cta-title em{color:var(--green);font-style:italic;font-weight:300}
+.cta-sub{font-size:14px;color:var(--text2);line-height:1.75;max-width:480px}
+.cta-btns{display:flex;flex-direction:column;gap:10px;min-width:180px}
 
-  .feature-card {
-    background: var(--surface);
-    padding: 2rem;
-    transition: background 0.2s;
-  }
-  .feature-card:hover { background: var(--card); }
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);
+  padding:1.5rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;
+  position:relative;z-index:1;flex-wrap:wrap;gap:1rem;
+}
+.foot-left{font-family:var(--mono);font-size:12px;color:var(--text3)}
+.foot-left strong{color:var(--text2)}
+.foot-links{display:flex;gap:1.5rem}
+.foot-links a{font-family:var(--mono);font-size:12px;color:var(--text3);text-decoration:none;transition:color .2s;letter-spacing:0.02em}
+.foot-links a:hover{color:var(--green)}
 
-  .feature-icon {
-    width: 42px; height: 42px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; margin-bottom: 1.2rem;
-  }
-  .feature-icon.purple { background: rgba(124,106,240,0.15); }
-  .feature-icon.teal { background: rgba(78,205,196,0.12); }
-  .feature-icon.amber { background: rgba(247,183,49,0.12); }
-  .feature-icon.coral { background: rgba(255,107,107,0.12); }
+/* ── CONTRIB ROW ── */
+.contrib-row{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:12px;color:var(--text3);
+  padding:8px 0;border-bottom:1px solid var(--border);
+}
+.contrib-row:last-child{border-bottom:none}
+.contrib-row .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
-  .feature-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
-  .feature-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.65; font-weight: 400; }
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.hero-left>*{animation:fadeUp .6s ease both}
+.hero-left>*:nth-child(1){animation-delay:.05s}
+.hero-left>*:nth-child(2){animation-delay:.12s}
+.hero-left>*:nth-child(3){animation-delay:.2s}
+.hero-left>*:nth-child(4){animation-delay:.28s}
+.hero-left>*:nth-child(5){animation-delay:.36s}
+.hero-right{animation:fadeUp .6s ease .2s both}
 
-  /* ─── Architecture / Diagram section ─── */
-  .arch-section {
-    padding: 6rem 2rem;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .arch-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4rem;
-    align-items: start;
-    margin-top: 3rem;
-  }
-
-  .stack-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
-  .stack-item {
-    display: flex; align-items: center; gap: 0.9rem;
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 10px; padding: 0.85rem 1rem;
-    font-size: 0.88rem; font-weight: 500;
-    transition: border-color 0.2s;
-  }
-  .stack-item:hover { border-color: var(--border-hover); }
-  .stack-badge {
-    font-family: var(--font-mono); font-size: 0.7rem;
-    padding: 0.2rem 0.5rem; border-radius: 5px;
-    font-weight: 500; margin-left: auto;
-  }
-  .badge-fe { background: rgba(78,205,196,0.12); color: var(--accent2); }
-  .badge-be { background: rgba(124,106,240,0.12); color: #a89ff5; }
-  .badge-ai { background: rgba(247,183,49,0.12); color: var(--accent3); }
-  .badge-inf { background: rgba(255,107,107,0.12); color: #ff9494; }
-
-  /* ─── Code preview ─── */
-  .code-block {
-    background: var(--code-bg); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden;
-    font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.7;
-  }
-  .code-header {
-    display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.7rem 1rem; border-bottom: 1px solid var(--border);
-    background: rgba(255,255,255,0.02);
-  }
-  .dot { width: 10px; height: 10px; border-radius: 50%; }
-  .dot1 { background: #ff5f56; }
-  .dot2 { background: #ffbd2e; }
-  .dot3 { background: #27c93f; }
-  .code-filename { color: var(--muted); font-size: 0.75rem; margin-left: auto; }
-  .code-body { padding: 1.2rem 1.4rem; overflow-x: auto; }
-  .code-body pre { white-space: pre; color: #c0c0d0; }
-  .kw { color: #c792ea; }
-  .fn { color: #82aaff; }
-  .str { color: #c3e88d; }
-  .cmt { color: #546e7a; }
-  .var { color: var(--accent2); }
-
-  /* ─── How it works ─── */
-  .steps { display: flex; flex-direction: column; gap: 0; position: relative; margin-top: 3rem; }
-  .steps::before {
-    content: ''; position: absolute; left: 22px; top: 40px;
-    width: 1px; height: calc(100% - 80px);
-    background: var(--border);
-  }
-
-  .step { display: flex; gap: 1.5rem; padding: 0 0 2.5rem; position: relative; }
-  .step-num {
-    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-    background: var(--card); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 0.85rem; color: var(--accent);
-    position: relative; z-index: 1;
-  }
-  .step-content { padding-top: 0.6rem; }
-  .step-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
-  .step-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.65; font-weight: 400; }
-
-  /* ─── CTA ─── */
-  .cta-section {
-    padding: 7rem 2rem;
-    text-align: center;
-  }
-  .cta-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4rem 3rem;
-    max-width: 700px;
-    margin: 0 auto;
-    position: relative;
-    overflow: hidden;
-  }
-  .cta-box::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 50% 0%, rgba(124,106,240,0.12) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .cta-title {
-    font-size: clamp(2rem, 4vw, 2.8rem);
-    font-weight: 800; letter-spacing: -0.04em; margin-bottom: 1rem;
-  }
-  .cta-sub { color: var(--muted); margin-bottom: 2rem; line-height: 1.65; }
-  .cta-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-
-  /* ─── Footer ─── */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 2rem;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.82rem;
-    font-weight: 400;
-  }
-  footer a { color: var(--muted); text-decoration: none; }
-  footer a:hover { color: var(--text); }
-
-  /* ─── Responsive ─── */
-  @media (max-width: 720px) {
-    nav { padding: 1rem; }
-    .nav-links { display: none; }
-    .arch-grid { grid-template-columns: 1fr; gap: 2rem; }
-    .stats { gap: 2rem; }
-    .hero { padding: 4rem 0 3rem; }
-  }
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;gap:2.5rem}
+  .hero-right{display:none}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:none}
+  .stat:nth-child(3){border-right:1px solid var(--border)}
+  .stat:nth-child(1),.stat:nth-child(2){border-bottom:1px solid var(--border)}
+  .feat-grid{grid-template-columns:1fr 1fr}
+  .feat:nth-child(3n){border-right:1px solid var(--border)}
+  .feat:nth-child(2n){border-right:none}
+  .stack-grid{grid-template-columns:1fr}
+  .steps-row{grid-template-columns:1fr 1fr}
+  .step:nth-child(2){border-right:none}
+  .step:nth-child(1),.step:nth-child(2){border-bottom:1px solid var(--border)}
+  .contrib-grid{grid-template-columns:1fr}
+  .cta-wrap{grid-template-columns:1fr;padding:2.5rem}
+  .cta-btns{flex-direction:row}
+  nav .nav-links{display:none}
+}
 </style>
 </head>
 <body>
-<div class="glow-blob blob1"></div>
-<div class="glow-blob blob2"></div>
-<div class="glow-blob blob3"></div>
 
-<!-- Nav -->
+<!-- NAV -->
 <nav>
-  <a class="logo" href="#">
-    <div class="logo-icon">🔍</div>
-    Repo<span>Sage</span>
-  </a>
-  <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#stack">Stack</a>
-    <a href="#how">How it works</a>
-    <a href="#github" style="color:var(--text)">⭐ Star on GitHub</a>
+  <div class="nav-inner">
+    <a class="logo" href="#">
+      <span class="logo-badge">RS</span>
+      <span class="logo-name">repo<span>sage</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">features</a>
+      <a href="#stack">stack</a>
+      <a href="#how">how it works</a>
+      <a href="#contribute">contribute</a>
+    </div>
+    <a class="nav-cta" href="https://github.com/Dantechdevs/reposage">$ git clone reposage</a>
   </div>
-  <a class="btn-primary" href="#github">Get started free</a>
 </nav>
 
-<!-- Hero -->
-<div class="hero">
-  <div class="badge">Open source · MIT licensed</div>
+<!-- HERO -->
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-eyebrow">v0.1.0 — public beta</div>
+      <h1>
+        Read any<br/>
+        codebase<br/>
+        <span class="ital">instantly.</span>
+      </h1>
+      <p class="hero-sub">
+        Paste a GitHub URL. Get a full breakdown — architecture, key files,
+        dependency graph, and a contribution guide. Works on any
+        <code>public</code> repo, any language, any size.
+      </p>
+      <div class="hero-actions">
+        <a class="btn-main" href="https://github.com/Dantechdevs/reposage">⭐ Star on GitHub</a>
+        <a class="btn-sec" href="#how">Read the docs →</a>
+      </div>
+      <div class="hero-meta">
+        <span class="hero-badge">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          MIT License
+        </span>
+        <span class="hero-badge">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 1.5A.5.5 0 012 1h12a.5.5 0 01.5.5v2a.5.5 0 01-.128.334L10 8.694V13.5a.5.5 0 01-.342.474l-3 1A.5.5 0 016 14.5V8.694L1.628 3.834A.5.5 0 011.5 3.5v-2z"/></svg>
+          Open source
+        </span>
+        <span class="hero-badge">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4a.5.5 0 01.5.5v3h3a.5.5 0 010 1h-3v3a.5.5 0 01-1 0v-3h-3a.5.5 0 010-1h3v-3A.5.5 0 018 4z"/></svg>
+          PRs welcome
+        </span>
+      </div>
+    </div>
 
-  <h1>Understand any<br/>GitHub repo <em>instantly</em></h1>
-
-  <p class="hero-sub">
-    Paste a GitHub URL and get a deep breakdown — architecture, key files, dependencies, how to contribute, and everything in between.
-  </p>
-
-  <div class="hero-cta">
-    <a class="btn-primary" href="#github">⭐ Star on GitHub</a>
-    <a class="btn-outline" href="#demo">See live demo →</a>
+    <div class="hero-right">
+      <div class="terminal">
+        <div class="term-bar">
+          <div class="term-dot td-r"></div>
+          <div class="term-dot td-y"></div>
+          <div class="term-dot td-g"></div>
+          <span class="term-tab">reposage — zsh</span>
+        </div>
+        <div class="term-body">
+          <div><span class="t-prompt">❯</span> <span class="t-cmd">reposage explain torvalds/linux</span></div>
+          <div><span class="t-dim">  fetching repo context via GitHub API...</span></div>
+          <div><span class="t-dim">  cloning file tree (78,342 files)</span></div>
+          <div><span class="t-dim">  reading README, Makefile, Kconfig...</span></div>
+          <hr class="t-hr"/>
+          <div><span class="t-section">PROJECT</span></div>
+          <div><span class="t-key">name</span>       <span class="t-str">"Linux Kernel"</span></div>
+          <div><span class="t-key">language</span>   <span class="t-val">C</span> <span class="t-dim">(97.2%)</span></div>
+          <div><span class="t-key">license</span>    <span class="t-val">GPL-2.0</span></div>
+          <hr class="t-hr"/>
+          <div><span class="t-section">ARCHITECTURE</span></div>
+          <div><span class="t-dim">  kernel/   </span><span class="t-out">core scheduler, syscalls</span></div>
+          <div><span class="t-dim">  drivers/  </span><span class="t-out">hardware abstraction</span></div>
+          <div><span class="t-dim">  fs/       </span><span class="t-out">virtual filesystem layer</span></div>
+          <div><span class="t-dim">  net/      </span><span class="t-out">networking stack</span></div>
+          <hr class="t-hr"/>
+          <div><span class="t-section">KEY FILES</span></div>
+          <div><span class="t-info">init/main.c</span>    <span class="t-dim">kernel entry point</span></div>
+          <div><span class="t-info">kernel/sched/</span>  <span class="t-dim">CFS scheduler</span></div>
+          <div><span class="t-info">Makefile</span>       <span class="t-dim">build system root</span></div>
+          <hr class="t-hr"/>
+          <div><span class="t-ok">✓</span> <span class="t-dim">shareable link → </span><span class="t-info">reposage.dev/torvalds/linux</span></div>
+          <div><span class="t-prompt">❯</span> <span class="cursor"></span></div>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <!-- Demo bar -->
-  <div class="demo-bar" id="demo">
-    <span class="demo-bar-prefix">github.com/</span>
-    <input type="text" placeholder="facebook/react" id="repo-input"/>
-    <button onclick="handleExplain()">Explain →</button>
-  </div>
-  <p class="demo-hint">Try <code>vercel/next.js</code> · <code>tiangolo/fastapi</code> · <code>torvalds/linux</code></p>
 </div>
 
-<!-- Stats -->
-<div class="stats container">
-  <div class="stat-item">
-    <div class="stat-num">~<span>30</span>s</div>
-    <div class="stat-label">Average explanation time</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num"><span>6</span> layers</div>
-    <div class="stat-label">Of repo context analyzed</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num"><span>100%</span></div>
-    <div class="stat-label">Open source & self-hostable</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num"><span>0</span> config</div>
-    <div class="stat-label">Required to get started</div>
+<!-- DEMO INPUT -->
+<div class="demo-section">
+  <div class="demo-inner">
+    <div class="demo-tag"><span>$</span> reposage explain <span style="color:var(--text2)">[ your-repo ]</span></div>
+    <div class="demo-bar">
+      <span class="demo-pre">github.com/</span>
+      <input type="text" placeholder="owner/repository" id="repo-input"/>
+      <button onclick="handleExplain()">explain →</button>
+    </div>
+    <div class="demo-hints">
+      <span class="hint-tag" onclick="setRepo('vercel/next.js')">vercel/next.js</span>
+      <span class="hint-tag" onclick="setRepo('tiangolo/fastapi')">tiangolo/fastapi</span>
+      <span class="hint-tag" onclick="setRepo('torvalds/linux')">torvalds/linux</span>
+      <span class="hint-tag" onclick="setRepo('django/django')">django/django</span>
+      <span class="hint-tag" onclick="setRepo('rust-lang/rust')">rust-lang/rust</span>
+    </div>
   </div>
 </div>
 
-<!-- Features -->
-<section class="section container" id="features">
-  <div class="section-label">Features</div>
-  <h2 class="section-title">Everything you need to<br/><em>grok</em> any codebase</h2>
-  <p class="section-sub">From high-level purpose to contribution guide — RepoSage reads the repo so you don't have to.</p>
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-n">~<em>30</em>s</div><div class="stat-l">avg. analysis time</div></div>
+  <div class="stat"><div class="stat-n"><em>6</em> signals</div><div class="stat-l">per repo extracted</div></div>
+  <div class="stat"><div class="stat-n"><em>100%</em></div><div class="stat-l">open source, MIT</div></div>
+  <div class="stat"><div class="stat-n"><em>0</em> deps</div><div class="stat-l">to get started</div></div>
+</div>
 
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon purple">🧠</div>
-      <div class="feature-title">Architecture Summary</div>
-      <div class="feature-desc">Understands the project's purpose, design patterns, and structure in plain English. No jargon, no assumptions.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon teal">🗂️</div>
-      <div class="feature-title">Key File Mapping</div>
-      <div class="feature-desc">Identifies the 5–10 most important files and explains what each one does and why it matters.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon amber">📦</div>
-      <div class="feature-title">Dependency Analysis</div>
-      <div class="feature-desc">Breaks down the tech stack — frameworks, libraries, tools — and explains how they fit together.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon coral">🤝</div>
-      <div class="feature-title">Contributor Onboarding</div>
-      <div class="feature-desc">Auto-generates a friendly "how to contribute" guide based on the actual repo structure and conventions.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon purple">💬</div>
-      <div class="feature-title">Chat with the Repo</div>
-      <div class="feature-desc">Ask follow-up questions. "Where is auth handled?" "What does this function do?" "How do I add a new endpoint?"</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon teal">🔗</div>
-      <div class="feature-title">Shareable Links</div>
-      <div class="feature-desc">Every explanation gets a unique URL. Share it in PRs, docs, or onboarding emails — it updates automatically.</div>
+<!-- FEATURES -->
+<section class="sec sec-alt" id="features">
+  <div class="wrap">
+    <div class="eyebrow">features</div>
+    <h2>Built for developers<br/>who value <em>clarity</em></h2>
+    <p class="sec-sub">Drop in any repo URL and get a structured, precise breakdown — the kind you'd write yourself after an hour of reading source code.</p>
+    <div class="feat-grid">
+      <div class="feat"><div class="feat-num">01 / ANALYSIS</div><div class="feat-icon">🏗️</div><div class="feat-title">Architecture breakdown</div><div class="feat-desc">Purpose, folder layout, design patterns, and data flow — explained in plain English, not marketing speak.</div></div>
+      <div class="feat"><div class="feat-num">02 / NAVIGATION</div><div class="feat-icon">🗂️</div><div class="feat-title">Key file map</div><div class="feat-desc">The 5–10 most important files ranked by relevance, with a one-liner on what each does and why it exists.</div></div>
+      <div class="feat"><div class="feat-num">03 / DEPS</div><div class="feat-icon">📦</div><div class="feat-title">Dependency graph</div><div class="feat-desc">Full tech stack breakdown — every framework, library, and tool, with a short note on why it's there.</div></div>
+      <div class="feat"><div class="feat-num">04 / ONBOARDING</div><div class="feat-icon">🤝</div><div class="feat-title">Contributor guide</div><div class="feat-desc">Auto-generated setup instructions, coding conventions, and contribution workflow based on the actual repo.</div></div>
+      <div class="feat"><div class="feat-num">05 / CHAT</div><div class="feat-icon">💬</div><div class="feat-title">Repo Q&amp;A</div><div class="feat-desc">"Where is auth handled?" "What does this middleware do?" Ask anything, get precise answers grounded in the code.</div></div>
+      <div class="feat"><div class="feat-num">06 / SHARE</div><div class="feat-icon">🔗</div><div class="feat-title">Shareable permalinks</div><div class="feat-desc">Every analysis gets a stable URL. Link it in your PR description, onboarding docs, or team wiki.</div></div>
     </div>
   </div>
 </section>
 
-<!-- Architecture / Stack -->
-<section class="arch-section" id="stack">
-  <div class="container">
-    <div class="section-label">Tech stack</div>
-    <h2 class="section-title">Built with the<br/><em>right</em> tools</h2>
-
-    <div class="arch-grid">
+<!-- STACK -->
+<section class="sec" id="stack">
+  <div class="wrap">
+    <div class="eyebrow">tech stack</div>
+    <h2>Clean architecture,<br/><em>no magic</em></h2>
+    <div class="stack-grid">
       <div>
-        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.5rem;line-height:1.7;">
-          A clean full-stack architecture — Next.js on the front, Python + FastAPI on the back, GitHub API for context. Designed to be self-hosted in one command.
-        </p>
-        <ul class="stack-list">
-          <li class="stack-item">
-            <span>⚡</span> Next.js 14 (App Router)
-            <span class="stack-badge badge-fe">Frontend</span>
-          </li>
-          <li class="stack-item">
-            <span>🐍</span> Python 3.11 + FastAPI
-            <span class="stack-badge badge-be">Backend</span>
-          </li>
-          <li class="stack-item">
-            <span>🧠</span> Claude API (claude-sonnet)
-            <span class="stack-badge badge-ai">AI</span>
-          </li>
-          <li class="stack-item">
-            <span>🐙</span> GitHub REST + GraphQL API
-            <span class="stack-badge badge-be">Data</span>
-          </li>
-          <li class="stack-item">
-            <span>🐘</span> PostgreSQL (SQLAlchemy + Alembic)
-            <span class="stack-badge badge-be">Storage</span>
-          </li>
-          <li class="stack-item">
-            <span>🔴</span> Redis (Celery workers)
-            <span class="stack-badge badge-be">Queue</span>
-          </li>
-          <li class="stack-item">
-            <span>🚀</span> Vercel + Railway
-            <span class="stack-badge badge-inf">Deploy</span>
-          </li>
-        </ul>
+        <p style="font-size:14px;color:var(--text2);line-height:1.75;margin-bottom:1.5rem">Next.js handles the frontend, Python + FastAPI owns the backend. GitHub API pulls the context. PostgreSQL stores it. Redis queues the jobs. Designed to be self-hosted with one command.</p>
+        <div class="stack-table">
+          <div class="stack-head"><span>package</span><span>version</span><span>layer</span></div>
+          <div class="stack-row"><span class="stack-nm">⚡ next.js</span><span class="stack-v">14.x</span><span class="tag tag-fe">frontend</span></div>
+          <div class="stack-row"><span class="stack-nm">🐍 fastapi</span><span class="stack-v">0.110</span><span class="tag tag-be">backend</span></div>
+          <div class="stack-row"><span class="stack-nm">🐘 postgresql</span><span class="stack-v">16</span><span class="tag tag-be">storage</span></div>
+          <div class="stack-row"><span class="stack-nm">🔴 redis</span><span class="stack-v">7.x</span><span class="tag tag-be">queue</span></div>
+          <div class="stack-row"><span class="stack-nm">🐙 github api</span><span class="stack-v">v3/v4</span><span class="tag tag-data">data</span></div>
+          <div class="stack-row"><span class="stack-nm">🚀 vercel + railway</span><span class="stack-v">—</span><span class="tag tag-inf">deploy</span></div>
+        </div>
       </div>
-
       <div>
         <div class="code-block">
-          <div class="code-header">
-            <div class="dot dot1"></div>
-            <div class="dot dot2"></div>
-            <div class="dot dot3"></div>
-            <span class="code-filename">backend/services/claude.py</span>
+          <div class="code-hdr">
+            <div class="cdot cd1"></div><div class="cdot cd2"></div><div class="cdot cd3"></div>
+            <span class="code-fn">backend/services/explainer.py</span>
           </div>
-          <div class="code-body">
-<pre><span class="kw">async def</span> <span class="fn">explain_repo</span>(<span class="var">repo_url</span>: <span class="kw">str</span>):
-    <span class="cmt"># 1. Fetch repo context from GitHub</span>
-    <span class="var">context</span> = <span class="kw">await</span> <span class="fn">fetch_repo_context</span>(
-        <span class="var">repo_url</span>,
-        files=[<span class="str">"README.md"</span>, <span class="str">"pyproject.toml"</span>],
-        include_tree=<span class="kw">True</span>,
-        recent_commits=<span class="num">10</span>
+          <div class="code-body"><pre><span class="cdec">@router.post</span>(<span class="cstr">"/explain"</span>)
+<span class="ckw">async def</span> <span class="cfn">explain_repo</span>(
+    <span class="cvar">payload</span>: <span class="cvar">ExplainRequest</span>,
+    <span class="cvar">db</span>: <span class="cvar">AsyncSession</span> <span class="cop">=</span> <span class="cfn">Depends</span>(<span class="cvar">get_db</span>)
+):
+    <span class="ccmt"># 1. check cache first</span>
+    <span class="cvar">cached</span> <span class="cop">=</span> <span class="ckw">await</span> <span class="cvar">db</span>.<span class="cfn">get_cached</span>(<span class="cvar">payload</span>.<span class="cvar">repo_url</span>)
+    <span class="ckw">if</span> <span class="cvar">cached</span>: <span class="ckw">return</span> <span class="cvar">cached</span>
+
+    <span class="ccmt"># 2. pull context from github</span>
+    <span class="cvar">ctx</span> <span class="cop">=</span> <span class="ckw">await</span> <span class="cfn">fetch_repo_context</span>(
+        <span class="cvar">payload</span>.<span class="cvar">repo_url</span>,
+        files<span class="cop">=</span>[<span class="cstr">"README.md"</span>, <span class="cstr">"pyproject.toml"</span>],
+        tree<span class="cop">=</span><span class="ckw">True</span>, commits<span class="cop">=</span><span class="cnum">10</span>
     )
 
-    <span class="cmt"># 2. Build structured prompt</span>
-    <span class="var">prompt</span> = <span class="fn">build_explainer_prompt</span>(<span class="var">context</span>)
-
-    <span class="cmt"># 3. Stream AI explanation via SSE</span>
-    <span class="kw">async with</span> <span class="var">anthropic</span>.<span class="fn">messages</span>.<span class="fn">stream</span>(
-        model=<span class="str">"claude-sonnet-4-20250514"</span>,
-        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="var">prompt</span>}]
-    ) <span class="kw">as</span> <span class="var">stream</span>:
-        <span class="kw">async for</span> <span class="var">chunk</span> <span class="kw">in</span> <span class="var">stream</span>.<span class="fn">text_stream</span>:
-            <span class="kw">yield</span> <span class="var">chunk</span></pre>
-          </div>
+    <span class="ccmt"># 3. stream breakdown via SSE</span>
+    <span class="ckw">return</span> <span class="cvar">StreamingResponse</span>(
+        <span class="cfn">stream_explanation</span>(<span class="cvar">ctx</span>),
+        media_type<span class="cop">=</span><span class="cstr">"text/event-stream"</span>
+    )</pre></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- How it works -->
-<section class="section container" id="how">
-  <div class="section-label">How it works</div>
-  <h2 class="section-title">From URL to insight<br/>in <em>four steps</em></h2>
-  <p class="section-sub">RepoSage orchestrates GitHub data + AI into a structured, readable breakdown.</p>
-
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-content">
+<!-- HOW IT WORKS -->
+<section class="sec sec-alt" id="how">
+  <div class="wrap">
+    <div class="eyebrow">how it works</div>
+    <h2>Four steps from URL<br/>to <em>full context</em></h2>
+    <p class="sec-sub">No complex setup. No configuration. Just a GitHub URL and a complete technical breakdown in under 30 seconds.</p>
+    <div class="steps-row">
+      <div class="step">
+        <div class="step-num">STEP 01</div>
         <div class="step-title">Paste a GitHub URL</div>
-        <div class="step-desc">Drop in any public GitHub repo URL — works with any language, any size. No auth needed for public repos.</div>
+        <div class="step-desc">Any public repo — any language, any size, any age. No authentication needed for public repos.</div>
       </div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-content">
+      <div class="step">
+        <div class="step-num">STEP 02</div>
         <div class="step-title">Context extraction</div>
-        <div class="step-desc">RepoSage fetches the README, file tree, key config files, recent commits, and detected languages via the GitHub API.</div>
+        <div class="step-desc">Pulls README, file tree, config files, language stats, and recent commits via the GitHub REST + GraphQL APIs.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 03</div>
+        <div class="step-title">Structured analysis</div>
+        <div class="step-desc">Generates a structured breakdown — purpose, architecture, key files, dependency graph, contribution guide — streamed live.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 04</div>
+        <div class="step-title">Explore &amp; share</div>
+        <div class="step-desc">Browse the output, ask follow-up questions, and share the permalink with your team or in a PR description.</div>
       </div>
     </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-content">
-        <div class="step-title">Analysis & breakdown</div>
-        <div class="step-desc">RepoSage reads the context and generates a structured breakdown: purpose, architecture, key files, dependencies, and contribution guide. Streamed in real-time.</div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-content">
-        <div class="step-title">Explore & share</div>
-        <div class="step-desc">Browse the explanation, ask follow-up questions, and share the unique link with teammates or in your PR description.</div>
-      </div>
+  </div>
+</section>
+
+<!-- CONTRIBUTE -->
+<section class="sec" id="contribute">
+  <div class="wrap">
+    <div class="eyebrow">contribute</div>
+    <h2>Built in the open.<br/><em>Ship with us.</em></h2>
+    <p class="sec-sub">RepoSage is actively developed. Every part of the stack is up for grabs — pick an issue and open a PR.</p>
+    <div class="contrib-grid">
+      <div class="contrib-card"><span class="contrib-tag ctag-good">good first issue</span><div class="contrib-title">Add support for GitLab URLs</div><div class="contrib-desc">Extend the URL parser and context fetcher to support GitLab repos alongside GitHub.</div></div>
+      <div class="contrib-card"><span class="contrib-tag ctag-help">help wanted</span><div class="contrib-title">Improve Python repo analysis</div><div class="contrib-desc">Better extraction for pyproject.toml, setup.py, and poetry.lock dependency graphs.</div></div>
+      <div class="contrib-card"><span class="contrib-tag ctag-help">help wanted</span><div class="contrib-title">Build the VS Code extension</div><div class="contrib-desc">Add a "Explain this repo" command to VS Code using the RepoSage API as the backend.</div></div>
+      <div class="contrib-card"><span class="contrib-tag ctag-docs">docs</span><div class="contrib-title">Write API reference docs</div><div class="contrib-desc">Document all FastAPI endpoints with request/response schemas and example payloads.</div></div>
     </div>
   </div>
 </section>
 
 <!-- CTA -->
-<section class="cta-section">
-  <div class="cta-box">
-    <h2 class="cta-title">Build it with us.</h2>
-    <p class="cta-sub">RepoSage is open source and looking for contributors. If you're a full-stack developer who loves developer tooling, this is your project.</p>
-    <div class="cta-btns">
-      <a class="btn-primary" href="#github" id="github">⭐ Star on GitHub</a>
-      <a class="btn-outline" href="#">Read the docs →</a>
+<section class="sec">
+  <div class="wrap">
+    <div class="cta-wrap">
+      <div>
+        <div class="cta-title">Ready to <em>explore</em><br/>any codebase?</div>
+        <p class="cta-sub">RepoSage is open source and free forever. Star the repo, fork it, self-host it — or just use it. All contributions welcome.</p>
+      </div>
+      <div class="cta-btns">
+        <a class="btn-main" href="https://github.com/Dantechdevs/reposage">⭐ Star on GitHub</a>
+        <a class="btn-sec" href="https://github.com/Dantechdevs/reposage/blob/main/README.md">Read the docs →</a>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- Footer -->
+<!-- FOOTER -->
 <footer>
-  <p>RepoSage · Open source · MIT License · Built with ❤️ by Dantechdevs</p>
-  <p style="margin-top:0.4rem"><a href="#">GitHub</a> · <a href="#">Docs</a> · <a href="#">Contributing</a></p>
+  <div class="foot-left"><strong>reposage</strong> · open source · MIT · built by <strong>Dantechdevs</strong></div>
+  <div class="foot-links">
+    <a href="https://github.com/Dantechdevs/reposage">github</a>
+    <a href="https://github.com/Dantechdevs/reposage/blob/main/README.md">docs</a>
+    <a href="https://github.com/Dantechdevs/reposage/blob/main/README.md#contributing">contributing</a>
+    <a href="https://github.com/Dantechdevs/reposage/blob/main/LICENSE">license</a>
+  </div>
 </footer>
 
 <script>
-  function handleExplain() {
-    const val = document.getElementById('repo-input').value.trim();
-    if (!val) return;
-    alert('🚀 RepoSage is coming soon!\n\nYou entered: ' + val + '\n\nStar the GitHub repo to be notified when it launches.');
-  }
-  document.getElementById('repo-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleExplain();
-  });
+function setRepo(val){document.getElementById('repo-input').value=val}
+function handleExplain(){
+  const val=document.getElementById('repo-input').value.trim();
+  if(!val)return;
+  alert('🚀 RepoSage is coming soon!\n\ngithub.com/'+val+'\n\nStar the repo to get notified at launch.');
+}
+document.getElementById('repo-input').addEventListener('keydown',e=>{if(e.key==='Enter')handleExplain()});
 </script>
 </body>
 </html>
