@@ -6,7 +6,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi)
-![Powered by Claude](https://img.shields.io/badge/AI-Claude%20Sonnet-orange)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 ---
@@ -225,7 +225,7 @@ MIT — use it, fork it, build on it. Just keep the attribution.
 
 ## 🙏 Acknowledgements
 
-Built with [Claude](https://anthropic.com), [Next.js](https://nextjs.org), [FastAPI](https://fastapi.tiangolo.com), and the [GitHub API](https://docs.github.com/en/rest).
+Built with Python, [Next.js](https://nextjs.org), [FastAPI](https://fastapi.tiangolo.com), and the [GitHub API](https://docs.github.com/en/rest).
 
 ---
 
