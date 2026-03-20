@@ -49,7 +49,7 @@ async def fetch_file_content(
 async def fetch_repo_context(repo_url: str) -> dict:
     owner, repo = parse_repo_url(repo_url)
 
-    async with httpx.AsyncClient(timeout=20.0) as client:
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
 
         # 1. Repo metadata
         meta_resp = await client.get(
