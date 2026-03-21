@@ -12,6 +12,9 @@ from routers import explain, chat, share
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 RepoSage backend starting...")
+    from db.database import create_tables
+    await create_tables()
+    print("✅ Database tables ready")
     yield
     print("👋 RepoSage backend shutting down...")
 
