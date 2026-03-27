@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { streamExplainRepo } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 function ExplainContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -14,14 +16,18 @@ function ExplainContent() {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareId, setShareId] = useState("");
+  const [sharing, setSharing] = useState(false);
 
   const displayRepo = decodeURIComponent(repoUrl)
     .replace("https://github.com/", "")
     .replace("github.com/", "");
 
+  const [owner, repo] = displayRepo.split("/");
+
   useEffect(() => {
     if (!repoUrl) { router.push("/"); return; }
-    setOutput(""); setLoading(true); setError(""); setDone(false);
+    setOutput(""); setLoading(true); setError(""); setDone(false); setShareId("");
 
     streamExplainRepo(
       repoUrl,
@@ -31,7 +37,37 @@ function ExplainContent() {
     );
   }, [repoUrl]);
 
-  const handleCopy = () => {
+  const handleShare = async () => {
+    if (!output || sharing) return;
+    setSharing(true);
+    try {
+      const res = await fetch(`${API_URL}/api/share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repo_url: decodeURIComponent(repoUrl),
+          explanation: output,
+          owner: owner || "",
+          repo: repo || "",
+        }),
+      });
+      const data = await res.json();
+      setShareId(data.share_id);
+    } catch {
+      setError("Failed to create share link");
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleCopyShare = () => {
+    const url = `${window.location.origin}/share/${shareId}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyOutput = () => {
     navigator.clipboard.writeText(output);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -46,7 +82,7 @@ function ExplainContent() {
       {/* Nav */}
       <nav className="relative z-10 border-b border-[#1e2a38] bg-[#080c10]/90 backdrop-blur px-6 h-14 flex items-center justify-between">
         <button onClick={() => router.push("/")}
-          className="text-xs text-[#8b949e] hover:text-[#3fb950] transition-colors flex items-center gap-2">
+          className="text-xs text-[#8b949e] hover:text-[#3fb950] transition-colors">
           ← back
         </button>
         <div className="flex items-center gap-2">
@@ -87,7 +123,7 @@ function ExplainContent() {
         {error && (
           <div className="bg-[#2d1a1a] border border-[#6a2020] rounded-lg p-6">
             <div className="text-[#f85149] text-xs font-bold mb-2">error</div>
-            <div className="text-[#8b949e] text-xs">{error}</div>
+            <div className="text-[#8b949e] text-sm">{error}</div>
             <button onClick={() => router.push("/")}
               className="mt-4 text-xs text-[#3fb950] border border-[#238636] px-3 py-1 rounded hover:bg-[#1a3a20] transition-colors">
               ← try another repo
@@ -120,15 +156,26 @@ function ExplainContent() {
 
         {/* Actions */}
         {done && (
-          <div className="flex gap-3 mt-6">
+          <div className="flex gap-3 mt-6 flex-wrap">
             <button onClick={() => router.push("/")}
               className="text-xs text-[#8b949e] border border-[#1e2a38] px-4 py-2 rounded hover:border-[#238636] hover:text-[#3fb950] transition-colors">
-              ← explain another repo
+              ← explain another
             </button>
-            <button onClick={handleCopy}
+            <button onClick={handleCopyOutput}
               className="text-xs text-[#8b949e] border border-[#1e2a38] px-4 py-2 rounded hover:border-[#238636] hover:text-[#3fb950] transition-colors">
               {copied ? "✓ copied!" : "copy output"}
             </button>
+            {!shareId ? (
+              <button onClick={handleShare} disabled={sharing}
+                className="text-xs text-[#3fb950] border border-[#238636] bg-[#1a3a20] px-4 py-2 rounded hover:bg-[#238636] transition-colors disabled:opacity-50">
+                {sharing ? "creating link..." : "🔗 create share link"}
+              </button>
+            ) : (
+              <button onClick={handleCopyShare}
+                className="text-xs text-[#3fb950] border border-[#238636] bg-[#1a3a20] px-4 py-2 rounded hover:bg-[#238636] transition-colors">
+                {copied ? "✓ copied!" : `🔗 /share/${shareId}`}
+              </button>
+            )}
             <a href={`https://github.com/${displayRepo}`} target="_blank"
               className="text-xs text-[#8b949e] border border-[#1e2a38] px-4 py-2 rounded hover:border-[#238636] hover:text-[#3fb950] transition-colors">
               view on github ↗
