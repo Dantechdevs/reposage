@@ -29,8 +29,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        os.getenv("FRONTEND_URL", "http://localhost:3000"),
         "http://localhost:3000",
+        "https://reposage-theta.vercel.app",
+        "https://reposage-production.up.railway.app",
+        os.getenv("FRONTEND_URL", "http://localhost:3000"),
     ],
     allow_credentials=True,
     allow_methods=["*"],
