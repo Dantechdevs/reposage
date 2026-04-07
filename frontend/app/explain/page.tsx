@@ -25,6 +25,8 @@ function ExplainContent() {
 
   const [owner, repo] = displayRepo.split("/");
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   useEffect(() => {
     if (!repoUrl) { router.push("/"); return; }
     setOutput(""); setLoading(true); setError(""); setDone(false); setShareId("");

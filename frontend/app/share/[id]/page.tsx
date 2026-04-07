@@ -30,7 +30,7 @@ export default function SharePage({ params }: { params: { id: string } }) {
         if (!res.ok) throw new Error("Share not found");
         const json = await res.json();
         setData(json);
-      } catch (err) {
+      } catch {
         setError("This share link doesn't exist or has expired.");
       } finally {
         setLoading(false);
